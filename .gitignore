@@ -1,0 +1,7 @@
+# Custom files #
+################
+.idea
+# Custom files #
+################
+docker-compose.yml
+*.env

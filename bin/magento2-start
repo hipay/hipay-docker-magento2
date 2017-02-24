@@ -1,0 +1,193 @@
+#!/bin/bash
+# Set +e because it's used in dev environment and waring due to password used in mysql command line
+set +e
+
+COLOR_SUCCESS='\033[0;32m'
+NC='\033[0m'
+
+printf "\n* Dockerize templates and Wait for Mysql server\n"
+
+# Template files are not deleted after dockerize, maybe they will be reused by --env-file argument
+gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json \
+												-template $DOCKERIZE_TEMPLATES_PATH/phpunit.xml.tmpl:dev/tests/functional/phpunit.xml \
+												-template $DOCKERIZE_TEMPLATES_PATH/credentials.xml.tmpl:dev/tests/functional/credentials.xml \
+												-template $DOCKERIZE_TEMPLATES_PATH/config.xml.tmpl:dev/tests/functional/etc/config.xml \
+												-wait tcp://$MAGE_DB_HOST:$MAGE_DB_PORT \
+												-timeout 30s
+
+# Update composer
+composer selfupdate
+
+# Set github oauthtoken again, maybe is changed by env vars
+gosu magento2 composer config -g github-oauth.github.com $GITHUB_API_TOKEN
+
+# Update magento
+gosu magento2 composer install
+
+# Check if database exists or if Reinstall is true
+# If not, try to create db and user granted
+DB_EXISTS=`mysql -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="SHOW DATABASES;" | grep "$MAGE_DB_NAME"`
+if [ -z $DB_EXISTS ]; then
+
+	# Create database if no already exists
+	mysql  -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="CREATE DATABASE IF NOT EXISTS $MAGE_DB_NAME;"
+
+	# Grant privileges
+	mysql  -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="GRANT ALL ON $MAGE_DB_NAME.* to $MAGE_DB_USER@'localhost' IDENTIFIED BY '$MAGE_DB_PASSWORD'; " \
+  	&& mysql  -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="GRANT ALL ON $MAGE_DB_NAME.* to $MAGE_DB_USER@'%' IDENTIFIED BY '$MAGE_DB_PASSWORD'; "  \
+  	&& mysql -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="flush privileges;"
+fi
+
+if [ $MAGE_REINSTALL = 1 ] || [ ! -f /var/www/html/magento2/app/etc/config.php ] && [ ! -f /var/www/html/magento2/app/etc/env.php ]; then
+	printf "\n* Start Magento2 Command line intallation ..."
+
+	printf "\n* Run install command: "
+	printf "\n 		su magento2 -c 'bin/magento setup:install \n'  \\ "
+	echo "					'--db-host=$MAGE_DB_HOST' \\ "
+	echo "					'--db-name=$MAGE_DB_NAME' \\"
+	echo "					'--db-user=$MAGE_DB_USER' \\"
+	echo "					'--db-passsword=$MAGE_DB_PASSWORD' \\"
+	echo "					'--db-prefix=$MAGE_DB_PREFIX' \\"
+	echo "					'--base-url=$MAGE_BASE_URL' \\"
+	echo "					'--base-url-secure=$MAGE_BASE_URL_SECURE' \\"
+	echo " 					'--admin-firstname=$MAGE_ADMIN_FIRSTNAME'  \\"
+	echo " 					'--admin-lastname=$MAGE_ADMIN_LASTNAME'  \\"
+	echo " 					'--admin-email=$MAGE_ADMIN_EMAIL'  \\"
+	echo " 					'--admin-user=$MAGE_ADMIN_USER'  \\"
+	echo " 					'--admin-password=$MAGE_ADMIN_PWD'  \\"
+	echo " 					'--use-rewrites=$MAGE_USE_REWRITES'  \\"
+	echo " 					'--backend-frontname=$MAGE_BACKEND_FRONTNAME'  \\"
+	echo " 					'--language=$MAGE_LANGUAGE'  \\"
+	echo " 					'--currency=$MAGE_CURRENCY'  \\"
+	echo " 					'--timezone=$MAGE_TIMEZONE'  \\"
+	echo " 					'--use-secure=$MAGE_USE_SECURE'  \\"
+	echo " 					'--use-secure-admin=$MAGE_USE_SECURE_ADMIN'  \\"
+	echo " 					'--admin-use-security-key=$MAGE_ADMIN_USE_SECURITY_KEY'  \\"
+	echo " 					'--session-save=$MAGE_SESSION_SAVE'  \\"
+	echo " 					'--key=$MAGE_KEY'  \\"
+	echo " 					'--db-init-statements=$MAGE_DB_INIT_STATEMENTS'  \\"
+	echo " 					'--sales-order-increment-prefix=$MAGE_SALES_ORDER_INCREMENT_PREFIX'  \\"
+	echo " 					'$MAGE_CLEANUP_DATABASE' \\ "
+	echo " 					'$MAGE_INSTALL_SAMPLE_DATA'  "
+	gosu magento2 magento setup:install \
+	  --db-host=$MAGE_DB_HOST \
+		--db-name=$MAGE_DB_NAME \
+		--db-user=$MAGE_DB_USER \
+	  --db-password=$MAGE_DB_PASSWORD \
+		--db-prefix=$MAGE_DB_PREFIX \
+		--language=$MAGE_LANGUAGE \
+		--currency=$MAGE_CURRENCY \
+		--timezone=$MAGE_TIMEZONE \
+		--use-secure=$MAGE_USE_SECURE \
+		--use-secure-admin=$MAGE_USE_SECURE_ADMIN \
+		--admin-use-security-key=$MAGE_ADMIN_USE_SECURITY_KEY \
+		--base-url=$MAGE_BASE_URL \
+		--base-url-secure=$MAGE_BASE_URL_SECURE \
+		--backend-frontname=$MAGE_BACKEND_FRONTNAME \
+		--admin-firstname=$MAGE_ADMIN_FIRSTNAME \
+		--admin-lastname=$MAGE_ADMIN_LASTNAME \
+		--admin-email=$MAGE_ADMIN_EMAIL \
+		--admin-user=$MAGE_ADMIN_USER \
+		--admin-password=$MAGE_ADMIN_PWD \
+		--use-rewrites=$MAGE_USE_REWRITES \
+		--session-save=$MAGE_SESSION_SAVE \
+		--key=$MAGE_KEY \
+		--db-init-statements="$MAGE_DB_INIT_STATEMENTS" \
+		--sales-order-increment-prefix="$MAGE_SALES_ORDER_INCREMENT_PREFIX" $MAGE_CLEANUP_DATABASE $MAGE_INSTALL_SAMPLE_DATA
+fi
+
+# Transform string vars to array
+OLDIFS=$IFS
+IFS=','
+read -r -a CUSTOM_REPOSITORIES <<< "$CUSTOM_REPOSITORIES"
+read -r -a CUSTOM_PACKAGES <<< "$CUSTOM_PACKAGES"
+read -r -a CUSTOM_MODULES <<< "$CUSTOM_MODULES"
+IFS=$OLDIFS
+
+# Add custom repositories to composer config
+if [ ! ${#CUSTOM_REPOSITORIES[*]} = 0 ]; then
+	cnt_repo=$((${#CUSTOM_REPOSITORIES[*]} - 1))
+	for i in `seq 0 $cnt_repo`; do
+		j=$(($i + 100)) # increase j to not erase magento repo
+		repo="$(echo ${CUSTOM_REPOSITORIES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//')"
+		printf "\nAdd Repository $repo to composer.json"
+		gosu magento2 composer config repositories.$j $repo
+	done
+fi
+
+# Add required packages
+if [ ! ${#CUSTOM_PACKAGES[*]} = 0 ]; then
+	cnt_package=$((${#CUSTOM_PACKAGES[*]} - 1))
+	for i in `seq 0 $cnt_package`; do
+		package=`echo ${CUSTOM_PACKAGES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//'`
+		printf "\nInstall package $package"
+		gosu magento2 composer require $package
+	done
+fi
+
+# Enable/Install modules
+if [ ! ${#CUSTOM_MODULES[*]} = 0 ]; then
+	cnt_modules=$((${#CUSTOM_MODULES[*]} - 1))
+	for i in `seq 0 $cnt_modules`; do
+		module=`echo ${CUSTOM_MODULES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//'`
+		gosu magento2 magento module:enable --clear-static-content $module
+		gosu magento2 magento setup:upgrade
+	done
+fi
+
+printf "\n* Set deploy mode to $MAGE_RUN_DEPLOY_MODE\n"
+gosu magento2 magento deploy:mode:set $MAGE_RUN_DEPLOY_MODE
+
+# @TODO check if it is really necessary
+if [ $MAGE_ENABLE_MODULE_MAGENTO_DEVELOPER = 1 ]; then
+	printf "\n* Enable Module Magento_Developer ...\n"
+	gosu magento2 magento module:enable Magento_Developer
+fi
+
+if [ $MAGE_RUN_REINDEX = 1 ]; then
+	printf "\n* Reindex all indexes ..."
+	gosu magento2 magento indexer:reindex
+fi
+
+if [ $MAGE_RUN_CACHE_CLEAN = 1 ]; then
+	printf "\n* Clean cache"
+	gosu magento2 magento cache:clean
+fi
+
+if [ $MAGE_RUN_CACHE_FLUSH = 1 ]; then
+	printf "\n* Flush cache"
+	gosu magento2 magento cache:flush
+fi
+
+if [ $MAGE_RUN_CACHE_DISABLE = 1 ]; then
+	printf "\n* Disable all cache types"
+	gosu magento2 magento cache:disable
+fi
+
+if [ $MAGE_RUN_STATIC_CONTENT_DEPLOY = 1 ]; then
+	printf "\n* Deploy static content ..."
+	gosu magento2 magento setup:static-content:deploy
+fi
+
+if [ $MAGE_RUN_SETUP_DI_COMPILE = 1 ]; then
+	printf "\n* Run code compilation..."
+	gosu magento2 magento setup:di:compile
+fi
+
+if [ "$1" = 'magento' ] || [ "$1" = 'phpunit' ]; then
+	printf "\n* Execute command $@"
+	service apache2 start
+	if [ "$1" = 'phpunit' ]; then
+		cd dev/tests/functional/
+		gosu magento2 php utils/generate.php
+  fi
+	exec gosu magento2 "$@"
+fi
+
+# We need to remove the pid file or Apache won't start after being stopped
+if [ -f /var/run/apache2/apache2.pid  ]; then
+    rm -f /var/run/apache2/apache2.pid
+fi
+
+printf "\n* Start Apache in foreground";
+exec apache2 -DFOREGROUND
