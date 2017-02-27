@@ -40,7 +40,7 @@ RUN chmod u+x /usr/local/bin/dockerize
 # Fake but valid credentials
 # You can put yours tokens with environments variables
 #=================================================
-ENV GITHUB_API_TOKEN=90979987af2d85ff9a53a1c69f894aed184b1036 \
+ENV GITHUB_API_TOKEN=bef0ec80d12009086371c166b904702cea3d35b1 \
     MAGE_ACCOUNT_PUBLIC_KEY=e3b8d4033c8f6440aec19950253a8cb3 \
 	MAGE_ACCOUNT_PRIVATE_KEY=8a297c071a7c3085ea0630283c96f002
 
