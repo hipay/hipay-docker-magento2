@@ -7,4 +7,5 @@ test:
     - docker-compose up -d db
     - docker run --link mysql -p 80:80 -d -e MAGE_DB_HOST=mysql -e MAGE_DB_PORT=3307 -e GITHUB_API_TOKEN=$GITHUB_API_TOKEN -e MAGE_ACCOUNT_PRIVATE_KEY=$MAGE_ACCOUNT_PRIVATE_KEY -e MAGE_ACCOUNT_PUBLIC_KEY=$MAGE_ACCOUNT_PUBLIC_KEY hipay/hipay-magento2
   override:
+    - sleep 200
     - curl --retry 30 --retry-delay 3 -v http://127.0.0.1
