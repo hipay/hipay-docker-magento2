@@ -2,12 +2,9 @@ web:
   container_name: magento2
   build: .
   ports:
-    - "8080:80"
+    - "80:80"
   links:
     - db
-  env_file:
-    - env/mage.env.sample
-    - env/module.env.sample
 db:
   container_name: mysql
   image: mysql:5.6
