@@ -39,6 +39,35 @@ if [ -z $DB_EXISTS ]; then
 fi
 
 if [ $MAGE_REINSTALL = 1 ] || [ ! -f /var/www/html/magento2/app/etc/config.php ] && [ ! -f /var/www/html/magento2/app/etc/env.php ]; then
+    # Transform string vars to array
+    OLDIFS=$IFS
+    IFS=','
+    read -r -a CUSTOM_REPOSITORIES <<< "$CUSTOM_REPOSITORIES"
+    read -r -a CUSTOM_PACKAGES <<< "$CUSTOM_PACKAGES"
+    read -r -a CUSTOM_MODULES <<< "$CUSTOM_MODULES"
+    IFS=$OLDIFS
+
+    # Add custom repositories to composer config
+    if [ ! ${#CUSTOM_REPOSITORIES[*]} = 0 ]; then
+        cnt_repo=$((${#CUSTOM_REPOSITORIES[*]} - 1))
+        for i in `seq 0 $cnt_repo`; do
+            j=$(($i + 100)) # increase j to not erase magento repo
+            repo="$(echo ${CUSTOM_REPOSITORIES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//')"
+            printf "\nAdd Repository $repo to composer.json"
+            gosu magento2 composer config repositories.$j $repo
+        done
+    fi
+
+    # Add required packages
+    if [ ! ${#CUSTOM_PACKAGES[*]} = 0 ]; then
+        cnt_package=$((${#CUSTOM_PACKAGES[*]} - 1))
+        for i in `seq 0 $cnt_package`; do
+            package=`echo ${CUSTOM_PACKAGES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//'`
+            printf "\nInstall package $package"
+            gosu magento2 composer require $package
+        done
+    fi
+
 	printf "\n* Start Magento2 Command line intallation ..."
 
 	printf "\n* Run install command: "
@@ -94,35 +123,6 @@ if [ $MAGE_REINSTALL = 1 ] || [ ! -f /var/www/html/magento2/app/etc/config.php ]
 		--key=$MAGE_KEY \
 		--db-init-statements="$MAGE_DB_INIT_STATEMENTS" \
 		--sales-order-increment-prefix="$MAGE_SALES_ORDER_INCREMENT_PREFIX" $MAGE_CLEANUP_DATABASE $MAGE_INSTALL_SAMPLE_DATA
-fi
-
-# Transform string vars to array
-OLDIFS=$IFS
-IFS=','
-read -r -a CUSTOM_REPOSITORIES <<< "$CUSTOM_REPOSITORIES"
-read -r -a CUSTOM_PACKAGES <<< "$CUSTOM_PACKAGES"
-read -r -a CUSTOM_MODULES <<< "$CUSTOM_MODULES"
-IFS=$OLDIFS
-
-# Add custom repositories to composer config
-if [ ! ${#CUSTOM_REPOSITORIES[*]} = 0 ]; then
-	cnt_repo=$((${#CUSTOM_REPOSITORIES[*]} - 1))
-	for i in `seq 0 $cnt_repo`; do
-		j=$(($i + 100)) # increase j to not erase magento repo
-		repo="$(echo ${CUSTOM_REPOSITORIES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//')"
-		printf "\nAdd Repository $repo to composer.json"
-		gosu magento2 composer config repositories.$j $repo
-	done
-fi
-
-# Add required packages
-if [ ! ${#CUSTOM_PACKAGES[*]} = 0 ]; then
-	cnt_package=$((${#CUSTOM_PACKAGES[*]} - 1))
-	for i in `seq 0 $cnt_package`; do
-		package=`echo ${CUSTOM_PACKAGES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//'`
-		printf "\nInstall package $package"
-		gosu magento2 composer require $package
-	done
 fi
 
 # Enable/Install modules
