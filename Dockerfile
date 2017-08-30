@@ -1,4 +1,4 @@
-FROM php:7.0-apache
+FROM php:7.1-apache
 
 MAINTAINER Hipay Fullservice <integration@hipay.com>
 
@@ -8,6 +8,7 @@ MAINTAINER Hipay Fullservice <integration@hipay.com>
 RUN apt-get update \
 	&& apt-get -qy --no-install-recommends install \
 		git \
+		libcurl4-gnutls-dev \
 	 	libmcrypt-dev \
 		libjpeg62-turbo-dev \
 		libpng12-dev \
@@ -18,9 +19,9 @@ RUN apt-get update \
 		libmysqlclient-dev \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure zip --enable-zip \
-    && docker-php-ext-install mcrypt gd intl mbstring soap xsl zip pdo_mysql \
-		&& curl -sS https://getcomposer.org/installer | php -- --filename=composer -- --install-dir=/usr/local/bin \
-		&& rm -r /var/lib/apt/lists/*
+    && docker-php-ext-install mcrypt gd intl mbstring soap xsl curl zip pdo_mysql intl xsl bcmath iconv \
+    && curl -sS https://getcomposer.org/installer | php -- --filename=composer -- --install-dir=/usr/local/bin \
+    && rm -r /var/lib/apt/lists/*
 
 #======================
 # Install Gosu
@@ -87,7 +88,7 @@ RUN chown -R magento2:magento2 $DOCKERIZE_TEMPLATES_PATH
 RUN gosu magento2 mkdir /home/magento2/.composer/
 
 # Magento Version
-ENV MAGE_VERSION="2.1.6" MAGE_SAMPLE_DATA_VERSION="100.*"
+ENV MAGE_VERSION="2.2.0-rc21" MAGE_SAMPLE_DATA_VERSION="100.*"
 
 # Dockerize auth and composer config
 RUN gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json \
@@ -169,11 +170,12 @@ ENV MAGE_CLEANUP_DATABASE="" \
 ENV MAGE_RUN_REINDEX=1 \
   MAGE_RUN_CACHE_CLEAN=0 \
   MAGE_RUN_CACHE_FLUSH=0 \
-  MAGE_RUN_CACHE_DISABLE=1 \
+  MAGE_RUN_CACHE_DISABLE=0 \
   MAGE_RUN_STATIC_CONTENT_DEPLOY=1 \
   MAGE_RUN_SETUP_DI_COMPILE=0 \
   MAGE_RUN_DEPLOY_MODE=developer \
-  MAGE_ENABLE_MODULE_MAGENTO_DEVELOPER=1
+  MAGE_ENABLE_MODULE_MAGENTO_DEVELOPER=1 \
+  MAGE_INSTALL_B2B_EXTENSION=1
 
 #============================================
 # Env var used for custom package composer installation

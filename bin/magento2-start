@@ -68,6 +68,11 @@ if [ $MAGE_REINSTALL = 1 ] || [ ! -f /var/www/html/magento2/app/etc/config.php ]
         done
     fi
 
+    if [ $MAGE_INSTALL_B2B_EXTENSION = 1 ]; then
+    printf "\n* Deploy B2B extension ..."
+    gosu magento2 composer require magento/extension-b2b
+fi
+
 	printf "\n* Start Magento2 Command line intallation ..."
 
 	printf "\n* Run install command: "
@@ -143,6 +148,7 @@ if [ $MAGE_ENABLE_MODULE_MAGENTO_DEVELOPER = 1 ]; then
 	printf "\n* Enable Module Magento_Developer ...\n"
 	gosu magento2 magento module:enable Magento_Developer
 fi
+
 
 if [ $MAGE_RUN_REINDEX = 1 ]; then
 	printf "\n* Reindex all indexes ..."
