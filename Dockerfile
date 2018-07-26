@@ -1,4 +1,4 @@
-FROM php:7.1-apache-jessie
+FROM php:7.0.31-apache-jessie
 
 MAINTAINER Hipay Fullservice <integration@hipay.com>
 
