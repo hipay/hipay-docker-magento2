@@ -1,0 +1,34 @@
+image: hipay/gitlab-ci-base:jessie
+
+stages:
+ - build
+ - test
+ - clean-stack
+
+
+build:
+  stage: build
+  script:
+     - docker-compose -f docker-compose.yml build --no-cache
+  tags:
+    - pi-commerce-no-overlay
+
+test:
+  stage: test
+  script:
+    - docker-compose -f docker-compose.yml up -d
+    - sleep 200
+    - curl --retry 10 --retry-delay 3 -v http://magento2
+  tags:
+    - pi-commerce-no-overlay
+
+clean-stack-test:
+  stage: clean-stack
+  script:
+    - docker-compose down --rmi local
+  tags:
+    - pi-commerce-no-overlay
+  when: always
+  tags:
+    - pi-commerce-no-overlay
+
