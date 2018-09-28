@@ -1,6 +1,6 @@
 # Docker image Magento2 for HIPAY ENTERPRISE 
 
-[![Build Status](https://hook.hipay.org/badge-ci/build/pi-ecommerce/hipay-docker-magento2/develop?service=github)](https://hook.hipay.org/badge-ci/build/pi-ecommerce/hipay-docker-magento2/develop?service=github)
+[![Build Status](https://hook.hipay.org/badge-ci/build/pi-ecommerce/hipay-docker-magento2/master?service=github)](https://hook.hipay.org/badge-ci/build/pi-ecommerce/hipay-docker-magento2/master?service=github)
 
 This image is a fork from [Sirateck devops-magento2](https://github.com/sirateck/devops-magento2). It's dedicated for Hipay developments.
 
