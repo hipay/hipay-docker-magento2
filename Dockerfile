@@ -16,7 +16,7 @@ RUN apt-get update \
 		mysql-client \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure zip --enable-zip \
-    && docker-php-ext-install mcrypt gd intl mbstring soap xsl zip pdo_mysql \
+    && docker-php-ext-install gd intl mbstring soap xsl zip pdo_mysql \
 		&& curl -sS https://getcomposer.org/installer | php -- --filename=composer -- --install-dir=/usr/local/bin \
 		&& rm -r /var/lib/apt/lists/*
 
