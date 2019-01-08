@@ -1,4 +1,4 @@
-FROM php:7.0-apache
+FROM php:7.2-apache
 
 MAINTAINER Hipay Fullservice <integration@hipay.com>
 
@@ -85,7 +85,7 @@ RUN chown -R magento2:magento2 $DOCKERIZE_TEMPLATES_PATH
 RUN gosu magento2 mkdir /home/magento2/.composer/
 
 # Magento Version
-ENV MAGE_VERSION="2.1.10" MAGE_SAMPLE_DATA_VERSION="100.*"
+ENV MAGE_VERSION="2.1.16" MAGE_SAMPLE_DATA_VERSION="100.*"
 
 # Dockerize auth and composer config
 RUN gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json \
