@@ -1,4 +1,4 @@
-FROM php:7.1.3-apache
+FROM php:7.2-apache
 
 MAINTAINER Hipay Fullservice <integration@hipay.com>
 
@@ -10,15 +10,19 @@ RUN apt-get update \
 		git \
 	 	libmcrypt-dev \
 		libjpeg62-turbo-dev \
+		libpng-dev \
 		libfreetype6-dev \
 		libxslt1-dev \
 		libicu-dev \
 		mysql-client \
+		default-libmysqlclient-dev \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure zip --enable-zip \
-    && docker-php-ext-install mcrypt bcmath gd intl mbstring soap xsl zip pdo_mysql \
-		&& curl -sS https://getcomposer.org/installer | php -- --filename=composer -- --install-dir=/usr/local/bin \
-		&& rm -r /var/lib/apt/lists/*
+    && docker-php-ext-install gd bcmath intl mbstring soap xsl zip pdo_mysql \
+	&& curl -sS https://getcomposer.org/installer | php -- --filename=composer -- --install-dir=/usr/local/bin \
+	&& pecl install apcu \
+    && echo "extension=apcu.so" > /usr/local/etc/php/conf.d/apcu.ini \
+	&& rm -r /var/lib/apt/lists/*
 
 #======================
 # Install Gosu
@@ -85,7 +89,7 @@ RUN chown -R magento2:magento2 $DOCKERIZE_TEMPLATES_PATH
 RUN gosu magento2 mkdir /home/magento2/.composer/
 
 # Magento Version
-ENV MAGE_VERSION="2.3" MAGE_SAMPLE_DATA_VERSION="100.*"
+ENV MAGE_VERSION="2.3.0" MAGE_SAMPLE_DATA_VERSION="100.*"
 
 # Dockerize auth and composer config
 RUN gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json \
