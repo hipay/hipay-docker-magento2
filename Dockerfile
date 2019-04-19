@@ -10,15 +10,17 @@ RUN apt-get update \
 		git \
 	 	libmcrypt-dev \
 		libjpeg62-turbo-dev \
-		libpng12-dev \
+		libpng-dev \
 		libfreetype6-dev \
 		libxslt1-dev \
 		libicu-dev \
 		mysql-client \
-		libmysqlclient-dev \
+		default-libmysqlclient-dev \
+	&& pecl install mcrypt-1.0.2 \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure zip --enable-zip \
-    && docker-php-ext-install mcrypt gd bcmath intl mbstring soap xsl zip pdo_mysql \
+    && docker-php-ext-install gd bcmath intl mbstring soap xsl zip pdo_mysql \
+    && docker-php-ext-enable mcrypt \
 		&& curl -sS https://getcomposer.org/installer | php -- --filename=composer -- --install-dir=/usr/local/bin \
 		&& rm -r /var/lib/apt/lists/*
 
