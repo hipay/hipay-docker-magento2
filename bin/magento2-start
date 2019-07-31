@@ -5,40 +5,9 @@ set +e
 COLOR_SUCCESS='\033[0;32m'
 NC='\033[0m'
 
-printf "\n* Dockerize templates and Wait for Mysql server\n"
+gosu magento2 dockerize -wait tcp://$MAGE_DB_HOST:$MAGE_DB_PORT -timeout 30s
 
-# Template files are not deleted after dockerize, maybe they will be reused by --env-file argument
-gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json \
-												-template $DOCKERIZE_TEMPLATES_PATH/phpunit.xml.tmpl:dev/tests/functional/phpunit.xml \
-												-template $DOCKERIZE_TEMPLATES_PATH/credentials.xml.tmpl:dev/tests/functional/credentials.xml \
-												-template $DOCKERIZE_TEMPLATES_PATH/config.xml.tmpl:dev/tests/functional/etc/config.xml \
-												-wait tcp://$MAGE_DB_HOST:$MAGE_DB_PORT \
-												-timeout 30s
-
-# Update composer
-composer selfupdate
-
-# Set github oauthtoken again, maybe is changed by env vars
-gosu magento2 composer config -g github-oauth.github.com $GITHUB_API_TOKEN
-
-# Update magento
-gosu magento2 composer install
-
-# Check if database exists or if Reinstall is true
-# If not, try to create db and user granted
-DB_EXISTS=`mysql -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="SHOW DATABASES;" | grep "$MAGE_DB_NAME"`
-if [ -z $DB_EXISTS ]; then
-
-	# Create database if no already exists
-	mysql  -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="CREATE DATABASE IF NOT EXISTS $MAGE_DB_NAME;"
-
-	# Grant privileges
-	mysql  -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="GRANT ALL ON $MAGE_DB_NAME.* to $MAGE_DB_USER@'localhost' IDENTIFIED BY '$MAGE_DB_PASSWORD'; " \
-  	&& mysql  -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="GRANT ALL ON $MAGE_DB_NAME.* to $MAGE_DB_USER@'%' IDENTIFIED BY '$MAGE_DB_PASSWORD'; "  \
-  	&& mysql -h $MAGE_DB_HOST -u root -p$MYSQL_ROOT_PASSWORD  --execute="flush privileges;"
-fi
-
-if [ $MAGE_REINSTALL = 1 ] || [ ! -f /var/www/html/magento2/app/etc/config.php ] && [ ! -f /var/www/html/magento2/app/etc/env.php ]; then
+if [ ! -f /var/www/html/magento2/app/etc/config.php ] && [ ! -f /var/www/html/magento2/app/etc/env.php ]; then
     # Transform string vars to array
     OLDIFS=$IFS
     IFS=','
@@ -68,9 +37,8 @@ if [ $MAGE_REINSTALL = 1 ] || [ ! -f /var/www/html/magento2/app/etc/config.php ]
         done
     fi
 
-	printf "\n* Start Magento2 Command line intallation ..."
-
-	printf "\n* Run install command: "
+	printf "\n Start Magento2 Command line installation ..."
+	printf "\n Run install command: "
 	printf "\n 		su magento2 -c 'bin/magento setup:install \n'  \\ "
 	echo "					'--db-host=$MAGE_DB_HOST' \\ "
 	echo "					'--db-name=$MAGE_DB_NAME' \\"
@@ -97,12 +65,11 @@ if [ $MAGE_REINSTALL = 1 ] || [ ! -f /var/www/html/magento2/app/etc/config.php ]
 	echo " 					'--db-init-statements=$MAGE_DB_INIT_STATEMENTS'  \\"
 	echo " 					'--sales-order-increment-prefix=$MAGE_SALES_ORDER_INCREMENT_PREFIX'  \\"
 	echo " 					'$MAGE_CLEANUP_DATABASE' \\ "
-	echo " 					'$MAGE_INSTALL_SAMPLE_DATA'  "
 	gosu magento2 magento setup:install \
-	  --db-host=$MAGE_DB_HOST \
+	    --db-host=$MAGE_DB_HOST \
 		--db-name=$MAGE_DB_NAME \
 		--db-user=$MAGE_DB_USER \
-	  --db-password=$MAGE_DB_PASSWORD \
+	    --db-password=$MAGE_DB_PASSWORD \
 		--db-prefix=$MAGE_DB_PREFIX \
 		--language=$MAGE_LANGUAGE \
 		--currency=$MAGE_CURRENCY \
@@ -122,7 +89,7 @@ if [ $MAGE_REINSTALL = 1 ] || [ ! -f /var/www/html/magento2/app/etc/config.php ]
 		--session-save=$MAGE_SESSION_SAVE \
 		--key=$MAGE_KEY \
 		--db-init-statements="$MAGE_DB_INIT_STATEMENTS" \
-		--sales-order-increment-prefix="$MAGE_SALES_ORDER_INCREMENT_PREFIX" $MAGE_CLEANUP_DATABASE $MAGE_INSTALL_SAMPLE_DATA
+		--sales-order-increment-prefix="$MAGE_SALES_ORDER_INCREMENT_PREFIX" $MAGE_CLEANUP_DATABASE
 fi
 
 # Enable/Install modules
@@ -135,32 +102,26 @@ if [ ! ${#CUSTOM_MODULES[*]} = 0 ]; then
 	done
 fi
 
-printf "\n* Set deploy mode to $MAGE_RUN_DEPLOY_MODE\n"
+printf "\n Set deploy mode to $MAGE_RUN_DEPLOY_MODE\n"
 gosu magento2 magento deploy:mode:set $MAGE_RUN_DEPLOY_MODE
 
-# @TODO check if it is really necessary
-if [ $MAGE_ENABLE_MODULE_MAGENTO_DEVELOPER = 1 ]; then
-	printf "\n* Enable Module Magento_Developer ...\n"
-	gosu magento2 magento module:enable Magento_Developer
-fi
-
 if [ $MAGE_RUN_REINDEX = 1 ]; then
-	printf "\n* Reindex all indexes ..."
+	printf "\n Reindex all indexes ..."
 	gosu magento2 magento indexer:reindex
 fi
 
 if [ $MAGE_RUN_CACHE_CLEAN = 1 ]; then
-	printf "\n* Clean cache"
+	printf "\n Clean cache"
 	gosu magento2 magento cache:clean
 fi
 
 if [ $MAGE_RUN_CACHE_FLUSH = 1 ]; then
-	printf "\n* Flush cache"
+	printf "\n Flush cache"
 	gosu magento2 magento cache:flush
 fi
 
 if [ $MAGE_RUN_CACHE_DISABLE = 1 ]; then
-	printf "\n* Disable all cache types"
+	printf "\n Disable all cache types"
 	gosu magento2 magento cache:disable
 fi
 
@@ -170,12 +131,12 @@ if [ $MAGE_RUN_STATIC_CONTENT_DEPLOY = 1 ]; then
 fi
 
 if [ $MAGE_RUN_SETUP_DI_COMPILE = 1 ]; then
-	printf "\n* Run code compilation..."
+	printf "\n Run code compilation..."
 	gosu magento2 magento setup:di:compile
 fi
 
 if [ "$1" = 'magento' ] || [ "$1" = 'phpunit' ]; then
-	printf "\n* Execute command $@"
+	printf "\n Execute command $@"
 	service apache2 start
 	if [ "$1" = 'phpunit' ]; then
 		cd dev/tests/functional/
@@ -190,6 +151,6 @@ if [ -f /var/run/apache2/apache2.pid  ]; then
 fi
 
 if [ -z "$1" ]; then
-    printf "\n* Start Apache in foreground \n"
+    printf "\n Start Apache in foreground \n"
     exec apache2 -DFOREGROUND
 fi
