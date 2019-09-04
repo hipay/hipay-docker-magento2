@@ -1,4 +1,4 @@
-FROM php:7.1-apache
+FROM php:7.2.19-apache
 
 MAINTAINER PI-Ecommerce <integration@hipay.com>
 
