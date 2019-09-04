@@ -1,4 +1,4 @@
-FROM php:7.2.19-apache
+FROM php:7.1-apache
 
 MAINTAINER PI-Ecommerce <integration@hipay.com>
 
@@ -20,6 +20,8 @@ RUN apt-get update \
 		wget \
 		ssh \
 		libsodium-dev \
+		mysql-client \
+        default-libmysqlclient-dev  \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure zip --enable-zip \
     && docker-php-ext-install gd bcmath intl mbstring soap xsl zip pdo_mysql \
@@ -29,7 +31,14 @@ RUN apt-get update \
 	&& rm -r /var/lib/apt/lists/* \
 	&& curl -o /usr/local/bin/gosu -fsSL "https://github.com/tianon/gosu/releases/download/1.7/gosu-$(dpkg --print-architecture)" \
     && chmod +x /usr/local/bin/gosu \
-    && a2enmod rewrite
+    && a2enmod rewrite \
+    && echo "sendmail_path = /usr/sbin/ssmtp -t" > /usr/local/etc/php/conf.d/sendmail.ini \
+    && wget https://phar.phpunit.de/phpunit-6.2.phar \
+    && chmod +x phpunit-6.2.phar \
+    && mv -f phpunit-6.2.phar /usr/local/bin/phpunit \
+    && phpunit --version \
+    && echo '' && pecl install xdebug \
+    && echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > /usr/local/etc/php/conf.d/xdebug.ini
 
 #=================================================
 # ENV credentials for repo.magento.com
@@ -82,7 +91,7 @@ ENV  MAGE_INSTALL_SAMPLE_DATA="--use-sample-data" \
   MAGE_SESSION_SAVE=files \
   MAGE_KEY="69c60a47f9dca004e47bf8783f4b9408" \
   MYSQL_ROOT_PASSWORD="magento2" \
-  MAGE_RUN_REINDEX=1 \
+  MAGE_RUN_REINDEX=0 \
   MAGE_RUN_CACHE_CLEAN=0 \
   MAGE_RUN_CACHE_FLUSH=0 \
   MAGE_RUN_CACHE_DISABLE=0 \
@@ -134,14 +143,14 @@ COPY conf/dockerize/auth.json.tmpl \
 RUN chown -R magento2:magento2 $DOCKERIZE_TEMPLATES_PATH \
  && chown -R magento2:www-data /var/www/html/magento2/ \
  && gosu magento2 mkdir /home/magento2/.composer/ \
- && gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json \
-    -template $DOCKERIZE_TEMPLATES_PATH/composer.json.tmpl:/var/www/html/magento2/composer.json \
+ && gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json -template $DOCKERIZE_TEMPLATES_PATH/composer.json.tmpl:/var/www/html/magento2/composer.json \
  && gosu magento2 composer global require hirak/prestissimo \
  && gosu magento2 composer install --no-progress --profile \
  && chown -R magento2:www-data . \
  && find . -type d -exec chmod 770 {} \; \
  && find . -type f -exec chmod 660 {} \; \
- && chmod u+x bin/magento
+ && chmod u+x bin/magento \
+ && gosu magento2 sed -i -e"s/\"minimum-stability\": \"alpha\"/\"minimum-stability\": \"dev\"/g" composer.json
 
 # magento and phpunit binaries to global path
 ENV PATH=/var/www/html/magento2/dev/tests/functional/vendor/bin:/var/www/html/magento2/bin:$PATH
