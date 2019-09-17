@@ -4,32 +4,27 @@ services:
   magento2:
     container_name: magento2-$CI_JOB_ID
     image: hipay/hipay-magento2
-    environment:
-      MAGE_DB_HOST: mysql
-      MAGE_DB_PORT: 3306
-      GITHUB_API_TOKEN: $GITHUB_API_TOKEN
-      MAGE_ACCOUNT_PRIVATE_KEY: $MAGE_ACCOUNT_PRIVATE_KEY
-      MAGE_ACCOUNT_PUBLIC_KEY: $MAGE_ACCOUNT_PUBLIC_KEY
+    depends_on:
+       - db
     build:
       context: .
       dockerfile: Dockerfile
-    networks:
-      - centralization
-      - outside
+    environment:
+      - MAGE_DB_HOST=db
+      - MAGE_DB_PORT=3306
+      - MAGE_RUN_CACHE_DISABLE=0
+      - MAGE_BASE_URL=http://127.0.0.1:8096/
+      - MAGE_BASE_URL_SECURE=https://127.0.0.1:8096/
+    ports:
+      - "8096:80"
 
   db:
     container_name: mysql-$CI_JOB_ID
-    image: mysql:5.6
+    image: mysql:5.7
     environment:
-      - MYSQL_ROOT_PASSWORD=magento2
-    networks:
-      - centralization
-      - outside
+        - MYSQL_DATABASE=magento2
+        - MYSQL_USER=magento2
+        - MYSQL_PASSWORD=magento2
+        - MYSQL_ROOT_PASSWORD=magento2
 
-
-networks:
-  centralization:
-    internal: true
-  outside:
-    external: true
 
