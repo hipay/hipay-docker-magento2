@@ -1,6 +1,57 @@
-FROM php:7.2.19-apache
+FROM php:7.2-apache-buster
 
 MAINTAINER PI-Ecommerce <integration@hipay.com>
+
+#=================================================
+# ENV credentials for repo.magento.com
+# Fake but valid credentials
+# You can put yours tokens with environments variables
+#=================================================
+ENV MAGE_ACCOUNT_PUBLIC_KEY=e3b8d4033c8f6440aec19950253a8cb3 \
+	MAGE_ACCOUNT_PRIVATE_KEY=8a297c071a7c3085ea0630283c96f002 \
+    DOCKERIZE_TEMPLATES_PATH=/home/magento2/dockerize \
+    MAGE_VERSION="2.3.2" \
+    MAGE_SAMPLE_DATA_VERSION="100.*" \
+    CUSTOM_REPOSITORIES="" \
+    CUSTOM_PACKAGES="" \
+    CUSTOM_MODULES="" \
+    PHP_TIMEZONE="Europe/Paris" \
+    APACHE_RUN_USER="www-data" \
+    APACHE_RUN_GROUP="www-data" \
+    APACHE_PID_FILE="/var/run/apache2/apache2.pid" \
+    APACHE_RUN_DIR="/var/run/apache2" \
+    APACHE_LOCK_DIR="/var/lock/apache2" \
+    APACHE_LOG_DIR="/var/log/apache2" \
+    MAGE_INSTALL_SAMPLE_DATA="--use-sample-data" \
+    MAGE_ADMIN_FIRSTNAME="John" \
+    MAGE_ADMIN_LASTNAME="Doe" \
+    MAGE_ADMIN_EMAIL="john.doe@yopmail.com" \
+    MAGE_ADMIN_USER="admin" \
+    MAGE_ADMIN_PWD="admin123" \
+    MAGE_BASE_URL="http://127.0.0.1" \
+    MAGE_BASE_URL_SECURE="https://127.0.0.1" \
+    MAGE_BACKEND_FRONTNAME="admin" \
+    MAGE_DB_NAME="magento2" \
+    MAGE_DB_USER="magento2" \
+    MAGE_DB_PASSWORD="magento2" \
+    MAGE_DB_PREFIX="mage_" \
+    MAGE_LANGUAGE="en_US" \
+    MAGE_CURRENCY="USD" \
+    MAGE_TIMEZONE="America/Chicago" \
+    MAGE_USE_REWRITES=1 \
+    MAGE_USE_SECURE=0 \
+    MAGE_USE_SECURE_ADMIN=0 \
+    MAGE_ADMIN_USE_SECURITY_KEY=0 \
+    MAGE_SESSION_SAVE=files \
+    MAGE_KEY="69c60a47f9dca004e47bf8783f4b9408" \
+    MYSQL_ROOT_PASSWORD="magento2" \
+    MAGE_RUN_REINDEX=0 \
+    MAGE_RUN_CACHE_CLEAN=0 \
+    MAGE_RUN_CACHE_FLUSH=0 \
+    MAGE_RUN_CACHE_DISABLE=0 \
+    MAGE_RUN_STATIC_CONTENT_DEPLOY=0 \
+    MAGE_RUN_SETUP_DI_COMPILE=0 \
+    MAGE_RUN_DEPLOY_MODE=developer
 
 #======================
 # Install packages needed by php's extensions
@@ -15,12 +66,12 @@ RUN apt-get update \
 		libfreetype6-dev \
 		libxslt1-dev \
 		libicu-dev \
-		ssmtp \
+		msmtp \
 		vim \
 		wget \
 		ssh \
 		libsodium-dev \
-		mysql-client \
+		default-mysql-client \
         default-libmysqlclient-dev  \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure zip --enable-zip \
@@ -38,72 +89,9 @@ RUN apt-get update \
     && mv -f phpunit-6.2.phar /usr/local/bin/phpunit \
     && phpunit --version \
     && echo '' && pecl install xdebug \
-    && echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > /usr/local/etc/php/conf.d/xdebug.ini
-
-#=================================================
-# ENV credentials for repo.magento.com
-# Fake but valid credentials
-# You can put yours tokens with environments variables
-#=================================================
-ENV MAGE_ACCOUNT_PUBLIC_KEY=e3b8d4033c8f6440aec19950253a8cb3 \
-	MAGE_ACCOUNT_PRIVATE_KEY=8a297c071a7c3085ea0630283c96f002
-
-ENV DOCKERIZE_TEMPLATES_PATH /home/magento2/dockerize
-
-ENV MAGE_VERSION="2.3.1" \
-    MAGE_SAMPLE_DATA_VERSION="100.*" \
-    CUSTOM_REPOSITORIES="" \
-    CUSTOM_PACKAGES="" \
-    CUSTOM_MODULES="" \
-    PHP_TIMEZONE="Europe/Paris" \
-    APACHE_RUN_USER="www-data" \
-    APACHE_RUN_GROUP="www-data" \
-    APACHE_PID_FILE="/var/run/apache2/apache2.pid" \
-    APACHE_RUN_DIR="/var/run/apache2" \
-    APACHE_LOCK_DIR="/var/lock/apache2" \
-    APACHE_LOG_DIR="/var/log/apache2"
-
-#====================================================
-# If you want to use sample data with installation or reinstallaiton,
-# set command argument value else let it empty
-# Eg. ENV MAGE_INSTALL_SAMPLE_DATA --use-sample-data
-#=====================================================
-ENV  MAGE_INSTALL_SAMPLE_DATA="--use-sample-data" \
-  MAGE_ADMIN_FIRSTNAME="John" \
-  MAGE_ADMIN_LASTNAME="Doe" \
-  MAGE_ADMIN_EMAIL="john.doe@yopmail.com" \
-  MAGE_ADMIN_USER="admin" \
-  MAGE_ADMIN_PWD="admin123" \
-  MAGE_BASE_URL="http://127.0.0.1" \
-  MAGE_BASE_URL_SECURE="https://127.0.0.1" \
-  MAGE_BACKEND_FRONTNAME="admin" \
-  MAGE_DB_NAME="magento2" \
-  MAGE_DB_USER="magento2" \
-  MAGE_DB_PASSWORD="magento2" \
-  MAGE_DB_PREFIX="mage_" \
-  MAGE_LANGUAGE="en_US" \
-  MAGE_CURRENCY="USD" \
-  MAGE_TIMEZONE="America/Chicago" \
-  MAGE_USE_REWRITES=1 \
-  MAGE_USE_SECURE=0 \
-  MAGE_USE_SECURE_ADMIN=0 \
-  MAGE_ADMIN_USE_SECURITY_KEY=0 \
-  MAGE_SESSION_SAVE=files \
-  MAGE_KEY="69c60a47f9dca004e47bf8783f4b9408" \
-  MYSQL_ROOT_PASSWORD="magento2" \
-  MAGE_RUN_REINDEX=0 \
-  MAGE_RUN_CACHE_CLEAN=0 \
-  MAGE_RUN_CACHE_FLUSH=0 \
-  MAGE_RUN_CACHE_DISABLE=0 \
-  MAGE_RUN_STATIC_CONTENT_DEPLOY=0 \
-  MAGE_RUN_SETUP_DI_COMPILE=0 \
-  MAGE_RUN_DEPLOY_MODE=developer
-
-#======================
-# Install Dockerize
-#======================
-RUN ln -s /usr/local/bin/php /usr/bin/ \
- && curl -o dockerize-linux-amd64-v0.2.0.tar.gz -sSOL https://github.com/jwilder/dockerize/releases/download/v0.2.0/dockerize-linux-amd64-v0.2.0.tar.gz \
+    && echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > /usr/local/etc/php/conf.d/xdebug.ini \
+    && ln -s /usr/local/bin/php /usr/bin/ \
+    && curl -o dockerize-linux-amd64-v0.2.0.tar.gz -sSOL https://github.com/jwilder/dockerize/releases/download/v0.2.0/dockerize-linux-amd64-v0.2.0.tar.gz \
     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-v0.2.0.tar.gz \
     && chmod u+x /usr/local/bin/dockerize \
     && curl -O  https://files.magerun.net/n98-magerun2.phar  \
