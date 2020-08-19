@@ -1,6 +1,7 @@
 # Custom files #
 ################
 .idea
+.vscode
 # Custom files #
 ################
 #docker-compose.yml

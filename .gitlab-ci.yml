@@ -1,36 +1,18 @@
-image: hipay/gitlab-ci-base:jessie
+image: $REGISTRY_CI/gitlab-ci-base:buster
 
 stages:
- - build
- - test
- - clean-stack
- - sync
+  - build
+  - sync
 
-
-build:
+build&test:
   stage: build
   script:
-     - docker-compose -f docker-compose.yml build --no-cache
-  tags:
-    - pi-commerce-no-overlay
-
-test:
-  stage: test
-  script:
-    - docker-compose -f docker-compose.yml up -d
+    - docker-compose up -d --build
     - sleep 200
+    - docker-compose logs
+    - curl http://127.0.0.1:8096
   tags:
-    - pi-commerce-no-overlay
-
-clean-stack-test:
-  stage: clean-stack
-  script:
-    - docker-compose down --rmi local
-  tags:
-    - pi-commerce-no-overlay
-  when: always
-  tags:
-    - pi-commerce-no-overlay
+    - gcp-default-runner-prod
 
 sync:
   stage: sync
@@ -40,4 +22,4 @@ sync:
     - git push --mirror https://$GITHUB_USER:$GITHUB_PASSWORD@github.com/hipay/hipay-docker-magento2.git
   allow_failure: true
   tags:
-    - pi-ecommerce
+    - gcp-default-runner-prod

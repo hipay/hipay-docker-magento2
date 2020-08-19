@@ -8,34 +8,34 @@ NC='\033[0m'
 gosu magento2 dockerize -wait tcp://$MAGE_DB_HOST:$MAGE_DB_PORT -timeout 30s
 
 if [ ! -f /var/www/html/magento2/app/etc/config.php ] && [ ! -f /var/www/html/magento2/app/etc/env.php ]; then
-    # Transform string vars to array
-    OLDIFS=$IFS
-    IFS=','
-    read -r -a CUSTOM_REPOSITORIES <<< "$CUSTOM_REPOSITORIES"
-    read -r -a CUSTOM_PACKAGES <<< "$CUSTOM_PACKAGES"
-    read -r -a CUSTOM_MODULES <<< "$CUSTOM_MODULES"
-    IFS=$OLDIFS
+	# Transform string vars to array
+	OLDIFS=$IFS
+	IFS=','
+	read -r -a CUSTOM_REPOSITORIES <<<"$CUSTOM_REPOSITORIES"
+	read -r -a CUSTOM_PACKAGES <<<"$CUSTOM_PACKAGES"
+	read -r -a CUSTOM_MODULES <<<"$CUSTOM_MODULES"
+	IFS=$OLDIFS
 
-    # Add custom repositories to composer config
-    if [ ! ${#CUSTOM_REPOSITORIES[*]} = 0 ]; then
-        cnt_repo=$((${#CUSTOM_REPOSITORIES[*]} - 1))
-        for i in `seq 0 $cnt_repo`; do
-            j=$(($i + 100)) # increase j to not erase magento repo
-            repo="$(echo ${CUSTOM_REPOSITORIES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//')"
-            printf "\nAdd Repository $repo to composer.json"
-            gosu magento2 composer config repositories.$j $repo
-        done
-    fi
+	# Add custom repositories to composer config
+	if [ ! ${#CUSTOM_REPOSITORIES[*]} = 0 ]; then
+		cnt_repo=$((${#CUSTOM_REPOSITORIES[*]} - 1))
+		for i in $(seq 0 $cnt_repo); do
+			j=$(($i + 100)) # increase j to not erase magento repo
+			repo="$(echo ${CUSTOM_REPOSITORIES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//')"
+			printf "\nAdd Repository $repo to composer.json"
+			gosu magento2 composer config repositories.$j $repo
+		done
+	fi
 
-    # Add required packages
-    if [ ! ${#CUSTOM_PACKAGES[*]} = 0 ]; then
-        cnt_package=$((${#CUSTOM_PACKAGES[*]} - 1))
-        for i in `seq 0 $cnt_package`; do
-            package=`echo ${CUSTOM_PACKAGES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//'`
-            printf "\nInstall package $package"
-            gosu magento2 composer require $package
-        done
-    fi
+	# Add required packages
+	if [ ! ${#CUSTOM_PACKAGES[*]} = 0 ]; then
+		cnt_package=$((${#CUSTOM_PACKAGES[*]} - 1))
+		for i in $(seq 0 $cnt_package); do
+			package=$(echo ${CUSTOM_PACKAGES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//')
+			printf "\nInstall package $package"
+			gosu magento2 composer require $package
+		done
+	fi
 
 	printf "\n Start Magento2 Command line installation ..."
 	printf "\n Run install command: "
@@ -66,10 +66,10 @@ if [ ! -f /var/www/html/magento2/app/etc/config.php ] && [ ! -f /var/www/html/ma
 	echo " 					'--sales-order-increment-prefix=$MAGE_SALES_ORDER_INCREMENT_PREFIX'  \\"
 	echo " 					'$MAGE_CLEANUP_DATABASE' \\ "
 	gosu magento2 magento setup:install \
-	    --db-host=$MAGE_DB_HOST \
+		--db-host=$MAGE_DB_HOST \
 		--db-name=$MAGE_DB_NAME \
 		--db-user=$MAGE_DB_USER \
-	    --db-password=$MAGE_DB_PASSWORD \
+		--db-password=$MAGE_DB_PASSWORD \
 		--db-prefix=$MAGE_DB_PREFIX \
 		--language=$MAGE_LANGUAGE \
 		--currency=$MAGE_CURRENCY \
@@ -95,8 +95,8 @@ fi
 # Enable/Install modules
 if [ ! ${#CUSTOM_MODULES[*]} = 0 ]; then
 	cnt_modules=$((${#CUSTOM_MODULES[*]} - 1))
-	for i in `seq 0 $cnt_modules`; do
-		module=`echo ${CUSTOM_MODULES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//'`
+	for i in $(seq 0 $cnt_modules); do
+		module=$(echo ${CUSTOM_MODULES[$i]} | sed 's/^[ \t]*//;s/[ \t]*$//')
 		gosu magento2 magento module:enable --clear-static-content $module
 		gosu magento2 magento setup:upgrade
 	done
@@ -141,16 +141,16 @@ if [ "$1" = 'magento' ] || [ "$1" = 'phpunit' ]; then
 	if [ "$1" = 'phpunit' ]; then
 		cd dev/tests/functional/
 		gosu magento2 php utils/generate.php
-  fi
+	fi
 	exec gosu magento2 "$@"
 fi
 
 # We need to remove the pid file or Apache won't start after being stopped
-if [ -f /var/run/apache2/apache2.pid  ]; then
-    rm -f /var/run/apache2/apache2.pid
+if [ -f /var/run/apache2/apache2.pid ]; then
+	rm -f /var/run/apache2/apache2.pid
 fi
 
 if [ -z "$1" ]; then
-    printf "\n Start Apache in foreground \n"
-    exec apache2 -DFOREGROUND
+	printf "\n Start Apache in foreground \n"
+	exec apache2 -DFOREGROUND
 fi

@@ -1,6 +1,7 @@
 FROM php:7.2.19-apache
 
-MAINTAINER PI-Ecommerce <integration@hipay.com>
+LABEL maintainer="PI-Ecommerce"
+LABEL maintainer_email="integration@hipay.com"
 
 #======================
 # Install packages needed by php's extensions
@@ -50,7 +51,7 @@ ENV MAGE_ACCOUNT_PUBLIC_KEY=e3b8d4033c8f6440aec19950253a8cb3 \
 
 ENV DOCKERIZE_TEMPLATES_PATH /home/magento2/dockerize
 
-ENV MAGE_VERSION="2.3.1" \
+ENV MAGE_VERSION="2.3.5" \
     MAGE_SAMPLE_DATA_VERSION="100.*" \
     CUSTOM_REPOSITORIES="" \
     CUSTOM_PACKAGES="" \

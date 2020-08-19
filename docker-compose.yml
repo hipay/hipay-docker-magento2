@@ -1,11 +1,11 @@
-version: '3'
+version: "3.3"
 
 services:
   magento2:
-    container_name: magento2-$CI_JOB_ID
+    container_name: hipay-magento2
     image: hipay/hipay-magento2
     depends_on:
-       - db
+      - db
     build:
       context: .
       dockerfile: Dockerfile
@@ -19,12 +19,10 @@ services:
       - "8096:80"
 
   db:
-    container_name: mysql-$CI_JOB_ID
+    container_name: mysql-mg2
     image: mysql:5.7
     environment:
-        - MYSQL_DATABASE=magento2
-        - MYSQL_USER=magento2
-        - MYSQL_PASSWORD=magento2
-        - MYSQL_ROOT_PASSWORD=magento2
-
-
+      - MYSQL_DATABASE=magento2
+      - MYSQL_USER=magento2
+      - MYSQL_PASSWORD=magento2
+      - MYSQL_ROOT_PASSWORD=magento2
