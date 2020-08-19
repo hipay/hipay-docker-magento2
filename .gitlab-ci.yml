@@ -1,5 +1,11 @@
 image: $REGISTRY_CI/gitlab-ci-base:buster
 
+variables:
+  DOCKER_HOST: tcp://localhost:2375/
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  GIT_DEPTH: 10
+
 stages:
   - build
   - sync
