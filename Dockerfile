@@ -146,7 +146,7 @@ RUN chown -R magento2:magento2 $DOCKERIZE_TEMPLATES_PATH \
  && gosu magento2 mkdir /home/magento2/.composer/ \
  && gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json -template $DOCKERIZE_TEMPLATES_PATH/composer.json.tmpl:/var/www/html/magento2/composer.json \
  && gosu magento2 composer global require hirak/prestissimo \
- && gosu magento2 composer install --no-progress --profile \
+ && gosu magento2 composer install --no-progress --profile -vvv \
  && chown -R magento2:www-data . \
  && find . -type d -exec chmod 770 {} \; \
  && find . -type f -exec chmod 660 {} \; \
