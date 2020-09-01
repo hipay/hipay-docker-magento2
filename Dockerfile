@@ -1,4 +1,4 @@
-FROM php:7.3.0-apache
+FROM php:7.2.19-apache
 
 LABEL maintainer="PI-Ecommerce"
 LABEL maintainer_email="integration@hipay.com"
