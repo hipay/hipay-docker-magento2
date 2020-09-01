@@ -17,8 +17,28 @@ build&test:
   stage: build
   script:
     - docker-compose up -d --build
-    - sleep 200
-    - docker-compose logs
+    # Wait 300s obligatorily
+    - sleep 300
+    # Check each 20s if apache service is ready (200s max)
+    - |
+      status="false"
+      loop=0
+      maxAttempts=10
+
+      while [[ "$status" == "false" && $loop -lt $maxAttempts ]]; do
+        if [[ "$(docker exec hipay-magento2 service apache2 status)" == *"apache2 is running"* ]]; then
+          status="true"
+        else
+          sleep 20
+          ((loop++))
+        fi
+      done
+
+      docker-compose logs
+
+      if [[ "$status" == "false" ]]; then
+        exit 1
+      fi
     - curl http://127.0.0.1:8096
   tags:
     - gcp-default-runner-prod
