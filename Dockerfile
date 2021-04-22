@@ -77,7 +77,7 @@ RUN apt-get update \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-configure zip --enable-zip \
     && docker-php-ext-install gd bcmath intl mbstring soap xsl zip pdo_mysql \
-    && curl -sS https://getcomposer.org/installer | php -- --filename=composer -- --install-dir=/usr/local/bin \
+    && curl -sS https://getcomposer.org/installer | php -- --1 --filename=composer -- --install-dir=/usr/local/bin \
     && pecl install apcu \
     && echo "extension=apcu.so" > /usr/local/etc/php/conf.d/apcu.ini \
     && rm -r /var/lib/apt/lists/* \
@@ -133,6 +133,7 @@ RUN chown -R magento2:magento2 $DOCKERIZE_TEMPLATES_PATH \
     && chown -R magento2:www-data /var/www/html/magento2/ \
     && gosu magento2 mkdir /home/magento2/.composer/ \
     && gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json -template $DOCKERIZE_TEMPLATES_PATH/composer.json.tmpl:/var/www/html/magento2/composer.json \
+    && gosu magento2 composer global require hirak/prestissimo \
     && gosu magento2 composer install --no-progress --profile \
     && chown -R magento2:www-data . \
     && find . -type d -exec chmod 770 {} \; \
