@@ -46,9 +46,9 @@ build&test:
 sync:
   stage: sync
   script:
-    - git clone --mirror https://$GITLAB_USER:$GITLAB_PASSWORD@gitlab.hipay.org/pi-ecommerce/cms/hipay-docker-magento2.git
+    - git clone --mirror "https://$GITLAB_USER:$GITLAB_PASSWORD@gitlab.hipay.org/pi-ecommerce/cms/hipay-docker-magento2.git"
     - cd hipay-docker-magento2.git
-    - git push --mirror https://$GITHUB_USER:$GITHUB_PASSWORD@github.com/hipay/hipay-docker-magento2.git
+    - git push --mirror "https://$GITHUB_USER:$GITHUB_PASSWORD@github.com/hipay/hipay-docker-magento2.git"
   allow_failure: true
   tags:
     - gcp-default-runner-prod
