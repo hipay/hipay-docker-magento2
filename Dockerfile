@@ -1,4 +1,4 @@
-FROM php:7.2-apache-buster
+FROM php:7.4-apache-buster
 
 LABEL maintainer="PI-Ecommerce"
 LABEL maintainer_email="integration@hipay.com"
@@ -9,9 +9,9 @@ LABEL maintainer_email="integration@hipay.com"
 # You can put yours tokens with environments variables
 #=================================================
 ENV MAGE_ACCOUNT_PUBLIC_KEY=e3b8d4033c8f6440aec19950253a8cb3 \
-	MAGE_ACCOUNT_PRIVATE_KEY=8a297c071a7c3085ea0630283c96f002 \
+    MAGE_ACCOUNT_PRIVATE_KEY=8a297c071a7c3085ea0630283c96f002 \
     DOCKERIZE_TEMPLATES_PATH=/home/magento2/dockerize \
-    MAGE_VERSION="2.3.5" \
+    MAGE_VERSION="2.4.2" \
     MAGE_SAMPLE_DATA_VERSION="100.*" \
     CUSTOM_REPOSITORIES="" \
     CUSTOM_PACKAGES="" \
@@ -58,30 +58,32 @@ ENV MAGE_ACCOUNT_PUBLIC_KEY=e3b8d4033c8f6440aec19950253a8cb3 \
 # Install packages needed by php's extensions
 #======================
 RUN apt-get update \
-	&& apt-get -qy --no-install-recommends install \
-		git \
-		unzip \
-	 	libmcrypt-dev \
-		libjpeg62-turbo-dev \
-		libpng-dev \
-		libfreetype6-dev \
-		libxslt1-dev \
-		libicu-dev \
-		msmtp \
-		vim \
-		wget \
-		ssh \
-		libsodium-dev \
-		default-mysql-client \
-        default-libmysqlclient-dev  \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
-    && docker-php-ext-configure zip --enable-zip \
-    && docker-php-ext-install gd bcmath intl mbstring soap xsl zip pdo_mysql \
-	&& curl -sS https://getcomposer.org/installer | php -- --filename=composer -- --install-dir=/usr/local/bin \
-	&& pecl install apcu \
+    && apt-get -qy --no-install-recommends install \
+    git \
+    unzip \
+    libzip-dev \
+    libonig-dev \
+    libmcrypt-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    libxslt1-dev \
+    libicu-dev \
+    msmtp \
+    vim \
+    wget \
+    ssh \
+    libsodium-dev \
+    default-mysql-client \
+    default-libmysqlclient-dev  \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-configure zip \
+    && docker-php-ext-install gd bcmath intl mbstring soap xsl zip pdo_mysql sockets \
+    && curl -sS https://getcomposer.org/installer | php -- --1 --filename=composer -- --install-dir=/usr/local/bin \
+    && pecl install apcu \
     && echo "extension=apcu.so" > /usr/local/etc/php/conf.d/apcu.ini \
-	&& rm -r /var/lib/apt/lists/* \
-	&& curl -o /usr/local/bin/gosu -fsSL "https://github.com/tianon/gosu/releases/download/1.7/gosu-$(dpkg --print-architecture)" \
+    && rm -r /var/lib/apt/lists/* \
+    && curl -o /usr/local/bin/gosu -fsSL "https://github.com/tianon/gosu/releases/download/1.7/gosu-$(dpkg --print-architecture)" \
     && chmod +x /usr/local/bin/gosu \
     && a2enmod rewrite \
     && echo "sendmail_path = /usr/sbin/ssmtp -t" > /usr/local/etc/php/conf.d/sendmail.ini \
@@ -120,26 +122,26 @@ RUN adduser --disabled-password --gecos "" magento2 \
 # Prepare Dockerize template for Auth, composer and MTF config
 #==========================================
 COPY conf/dockerize/auth.json.tmpl \
-        conf/dockerize/composer.json.tmpl \
-        conf/dockerize/mtf/phpunit.xml.tmpl \
-        conf/dockerize/mtf/credentials.xml.tmpl \
-        conf/dockerize/mtf/etc/config.xml.tmpl \
-        /home/magento2/dockerize/
+    conf/dockerize/composer.json.tmpl \
+    conf/dockerize/mtf/phpunit.xml.tmpl \
+    conf/dockerize/mtf/credentials.xml.tmpl \
+    conf/dockerize/mtf/etc/config.xml.tmpl \
+    /home/magento2/dockerize/
 
 #==========================================
 # Magento2 install
 #==========================================
 RUN chown -R magento2:magento2 $DOCKERIZE_TEMPLATES_PATH \
- && chown -R magento2:www-data /var/www/html/magento2/ \
- && gosu magento2 mkdir /home/magento2/.composer/ \
- && gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json -template $DOCKERIZE_TEMPLATES_PATH/composer.json.tmpl:/var/www/html/magento2/composer.json \
- && gosu magento2 composer global require hirak/prestissimo \
- && gosu magento2 composer install --no-progress --profile \
- && chown -R magento2:www-data . \
- && find . -type d -exec chmod 770 {} \; \
- && find . -type f -exec chmod 660 {} \; \
- && chmod u+x bin/magento \
- && gosu magento2 sed -i -e"s/\"minimum-stability\": \"alpha\"/\"minimum-stability\": \"dev\"/g" composer.json
+    && chown -R magento2:www-data /var/www/html/magento2/ \
+    && gosu magento2 mkdir /home/magento2/.composer/ \
+    && gosu magento2 dockerize -template $DOCKERIZE_TEMPLATES_PATH/auth.json.tmpl:/home/magento2/.composer/auth.json -template $DOCKERIZE_TEMPLATES_PATH/composer.json.tmpl:/var/www/html/magento2/composer.json \
+    && gosu magento2 composer global require hirak/prestissimo \
+    && gosu magento2 composer install --no-progress --profile \
+    && chown -R magento2:www-data . \
+    && find . -type d -exec chmod 770 {} \; \
+    && find . -type f -exec chmod 660 {} \; \
+    && chmod u+x bin/magento \
+    && gosu magento2 sed -i -e"s/\"minimum-stability\": \"alpha\"/\"minimum-stability\": \"dev\"/g" composer.json
 
 # magento and phpunit binaries to global path
 ENV PATH=/var/www/html/magento2/dev/tests/functional/vendor/bin:/var/www/html/magento2/bin:$PATH
