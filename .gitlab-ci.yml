@@ -3,7 +3,7 @@ image: $REGISTRY_CI/gitlab-ci-base:buster
 variables:
   DOCKER_HOST: tcp://localhost:2375/
   DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: ""
+  DOCKER_TLS_CERTDIR: ''
   GIT_DEPTH: 10
 
 services:
@@ -46,7 +46,7 @@ build&test:
 sync:
   stage: sync
   script:
-    - git clone --mirror https://$GITLAB_USER:$GITLAB_PASSWORD@gitlab.hipay.org/pi-ecommerce/hipay-docker-magento2.git
+    - git clone --mirror https://$GITLAB_USER:$GITLAB_PASSWORD@gitlab.hipay.org/pi-ecommerce/cms/hipay-docker-magento2.git
     - cd hipay-docker-magento2.git
     - git push --mirror https://$GITHUB_USER:$GITHUB_PASSWORD@github.com/hipay/hipay-docker-magento2.git
   allow_failure: true
