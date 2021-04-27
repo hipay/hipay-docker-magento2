@@ -1,4 +1,4 @@
-FROM php:7.2-apache-buster
+FROM php:7.4-apache-buster
 
 LABEL maintainer="PI-Ecommerce"
 LABEL maintainer_email="integration@hipay.com"
@@ -11,7 +11,7 @@ LABEL maintainer_email="integration@hipay.com"
 ENV MAGE_ACCOUNT_PUBLIC_KEY=e3b8d4033c8f6440aec19950253a8cb3 \
     MAGE_ACCOUNT_PRIVATE_KEY=8a297c071a7c3085ea0630283c96f002 \
     DOCKERIZE_TEMPLATES_PATH=/home/magento2/dockerize \
-    MAGE_VERSION="2.3.6" \
+    MAGE_VERSION="2.4.2" \
     MAGE_SAMPLE_DATA_VERSION="100.*" \
     CUSTOM_REPOSITORIES="" \
     CUSTOM_PACKAGES="" \
@@ -61,6 +61,8 @@ RUN apt-get update \
     && apt-get -qy --no-install-recommends install \
     git \
     unzip \
+    libzip-dev \
+    libonig-dev \
     libmcrypt-dev \
     libjpeg62-turbo-dev \
     libpng-dev \
@@ -74,9 +76,9 @@ RUN apt-get update \
     libsodium-dev \
     default-mysql-client \
     default-libmysqlclient-dev  \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
-    && docker-php-ext-configure zip --enable-zip \
-    && docker-php-ext-install gd bcmath intl mbstring soap xsl zip pdo_mysql \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-configure zip \
+    && docker-php-ext-install gd bcmath intl mbstring soap xsl zip pdo_mysql sockets \
     && curl -sS https://getcomposer.org/installer | php -- --1 --filename=composer -- --install-dir=/usr/local/bin \
     && pecl install apcu \
     && echo "extension=apcu.so" > /usr/local/etc/php/conf.d/apcu.ini \
