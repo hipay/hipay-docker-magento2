@@ -1,4 +1,4 @@
-version: "3.3"
+version: '3.3'
 
 services:
   magento2:
@@ -6,6 +6,7 @@ services:
     image: hipay/hipay-magento2
     depends_on:
       - db
+      - elasticsearch
     build:
       context: .
       dockerfile: Dockerfile
@@ -15,8 +16,10 @@ services:
       - MAGE_RUN_CACHE_DISABLE=0
       - MAGE_BASE_URL=http://127.0.0.1:8096/
       - MAGE_BASE_URL_SECURE=https://127.0.0.1:8096/
+      - MAGE_ELASTICSEARCH_HOST=elasticsearch
+      - MAGE_ELASTICSEARCH_PORT=9200
     ports:
-      - "8096:80"
+      - '8096:80'
 
   db:
     container_name: mysql-mg2
@@ -26,3 +29,11 @@ services:
       - MYSQL_USER=magento2
       - MYSQL_PASSWORD=magento2
       - MYSQL_ROOT_PASSWORD=magento2
+
+  elasticsearch:
+    container_name: es-mg2
+    image: elasticsearch:7.13.2
+    environment:
+      - cluster.name=docker-cluster
+      - discovery.type=single-node
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
